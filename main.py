@@ -4,7 +4,7 @@ from fastapi.responses import JSONResponse
 import time
 import uuid
 
-EMAIL = "your-email@example.com"   # <-- replace with your exact logged-in email
+EMAIL = "24f2008956@ds.study.iitm.ac.in"  # <-- replace with your exact logged-in email
 ALLOWED_ORIGIN = "https://dash-e7eeib.example.com"
 
 app = FastAPI()
