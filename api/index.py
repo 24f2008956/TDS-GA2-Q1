@@ -115,77 +115,46 @@ def coerce(key, value):
         return to_bool(value)
     return str(value)
 
+
 @app.get("/effective-config")
 def effective_config(set: list[str] = Query(default=[])):
     config = DEFAULTS.copy()
 
-    # -------------------------
-    # 1. YAML layer
-    # -------------------------
+    # YAML layer
     if os.path.exists("config.development.yaml"):
-        with open("config.development.yaml", "r") as f:
-            yaml_config = yaml.safe_load(f) or {}
-            config.update(yaml_config)
+        with open("config.development.yaml") as f:
+            config.update(yaml.safe_load(f))
 
-    # -------------------------
-    # 2. .env layer
-    # -------------------------
-    # APP_LOG_LEVEL=info
-    if os.getenv("APP_LOG_LEVEL"):
-        config["log_level"] = os.getenv("APP_LOG_LEVEL")
+    # .env layer
+    if "APP_LOG_LEVEL" in os.environ:
+        config["log_level"] = os.environ["APP_LOG_LEVEL"]
 
-    # APP_API_KEY=key-727amr6hbx
-    if os.getenv("APP_API_KEY"):
-        config["api_key"] = os.getenv("APP_API_KEY")
+    if "APP_API_KEY" in os.environ:
+        config["api_key"] = os.environ["APP_API_KEY"]
 
-    # Alias support: NUM_WORKERS -> workers
-    if os.getenv("NUM_WORKERS"):
-        config["workers"] = int(os.getenv("NUM_WORKERS"))
+    if "NUM_WORKERS" in os.environ:
+        config["workers"] = int(os.environ["NUM_WORKERS"])
 
-    # -------------------------
-    # 3. OS environment layer
-    # (highest priority before CLI)
-    # -------------------------
-    if os.getenv("APP_PORT"):
-        config["port"] = int(os.getenv("APP_PORT"))
+    # OS env layer
+    mapping = {
+        "APP_PORT": "port",
+        "APP_WORKERS": "workers",
+        "APP_DEBUG": "debug",
+        "APP_LOG_LEVEL": "log_level",
+        "APP_API_KEY": "api_key",
+    }
 
-    if os.getenv("APP_WORKERS"):
-        config["workers"] = int(os.getenv("APP_WORKERS"))
+    for env_key, cfg_key in mapping.items():
+        if env_key in os.environ:
+            config[cfg_key] = coerce(cfg_key, os.environ[env_key])
 
-    if os.getenv("APP_DEBUG"):
-        config["debug"] = coerce("debug", os.getenv("APP_DEBUG"))
-
-    if os.getenv("APP_LOG_LEVEL"):
-        config["log_level"] = os.getenv("APP_LOG_LEVEL")
-
-    if os.getenv("APP_API_KEY"):
-        config["api_key"] = os.getenv("APP_API_KEY")
-
-    # -------------------------
-    # 4. CLI overrides
-    # ?set=key=value&set=...
-    # -------------------------
+    # CLI overrides
     for item in set:
         if "=" in item:
-            key, value = item.split("=", 1)
+            k, v = item.split("=", 1)
+            config[k] = coerce(k, v)
 
-            if key in ["port", "workers"]:
-                config[key] = int(value)
-
-            elif key == "debug":
-                config[key] = value.lower() in [
-                    "true",
-                    "1",
-                    "yes",
-                    "on",
-                ]
-
-            else:
-                config[key] = value
-
-    # -------------------------
-    # Never expose secrets
-    # -------------------------
+    # mask secret
     config["api_key"] = "****"
 
     return config
@@ -193,3 +162,13 @@ def effective_config(set: list[str] = Query(default=[])):
 @app.get("/effective-config")
 def effective_config():
     return {"test": "working"}
+
+import os
+
+@app.get("/debug-env")
+def debug_env():
+    return {
+        "APP_PORT": os.getenv("APP_PORT"),
+        "APP_WORKERS": os.getenv("APP_WORKERS"),
+        "APP_API_KEY_EXISTS": os.getenv("APP_API_KEY") is not None,
+    }
