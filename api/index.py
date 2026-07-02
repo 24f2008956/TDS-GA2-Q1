@@ -90,3 +90,75 @@ def verify_token(req: TokenRequest):
             status_code=401,
             detail={"valid": False}
         )
+        
+        
+        
+load_dotenv()
+
+DEFAULTS = {
+    "port": 8000,
+    "workers": 1,
+    "debug": False,
+    "log_level": "info",
+    "api_key": "default-secret-000",
+}
+
+
+def to_bool(v):
+    return str(v).lower() in ["true", "1", "yes", "on"]
+
+
+def coerce(key, value):
+    if key in ["port", "workers"]:
+        return int(value)
+    if key == "debug":
+        return to_bool(value)
+    return str(value)
+
+
+@app.get("/effective-config")
+def effective_config(set: list[str] = Query(default=[])):
+    config = DEFAULTS.copy()
+
+    # YAML layer
+    if os.path.exists("config.development.yaml"):
+        with open("config.development.yaml") as f:
+            config.update(yaml.safe_load(f))
+
+    # .env layer
+    if "APP_LOG_LEVEL" in os.environ:
+        config["log_level"] = os.environ["APP_LOG_LEVEL"]
+
+    if "APP_API_KEY" in os.environ:
+        config["api_key"] = os.environ["APP_API_KEY"]
+
+    if "NUM_WORKERS" in os.environ:
+        config["workers"] = int(os.environ["NUM_WORKERS"])
+
+    # OS env layer
+    mapping = {
+        "APP_PORT": "port",
+        "APP_WORKERS": "workers",
+        "APP_DEBUG": "debug",
+        "APP_LOG_LEVEL": "log_level",
+        "APP_API_KEY": "api_key",
+    }
+
+    for env_key, cfg_key in mapping.items():
+        if env_key in os.environ:
+            config[cfg_key] = coerce(cfg_key, os.environ[env_key])
+
+    # CLI overrides
+    for item in set:
+        if "=" in item:
+            k, v = item.split("=", 1)
+            config[k] = coerce(k, v)
+
+    # mask secret
+    config["api_key"] = "****"
+
+    return config
+
+@app.get("/effective-config")
+def effective_config():
+    return {"test": "working"}
