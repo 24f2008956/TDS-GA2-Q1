@@ -12,11 +12,13 @@ ALLOWED_ORIGIN = "https://dash-e7eeib.example.com"
 
 app = FastAPI()
 
+ALLOWED_ORIGIN = "https://dash-e7eeib.example.com"
+
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
+    allow_origins=[ALLOWED_ORIGIN],   # ✅ only this origin
     allow_credentials=False,
-    allow_methods=["*"],
+    allow_methods=["GET", "OPTIONS"],
     allow_headers=["*"],
 )
 
