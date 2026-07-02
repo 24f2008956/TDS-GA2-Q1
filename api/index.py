@@ -7,10 +7,11 @@ EMAIL = "24f2008956@ds.study.iitm.ac.in"
 ALLOWED_ORIGIN = "https://dash-e7eeib.example.com"
 
 app = FastAPI()
+
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["https://dash-e7eeib.example.com"],
-    allow_credentials=True,
+    allow_origins=[ALLOWED_ORIGIN],
+    allow_credentials=False,   # keep False for this assignment
     allow_methods=["GET", "OPTIONS"],
     allow_headers=["*"],
 )
@@ -18,19 +19,18 @@ app.add_middleware(
 @app.middleware("http")
 async def add_headers(request: Request, call_next):
     start = time.perf_counter()
-
     response = await call_next(request)
-
     response.headers["X-Request-ID"] = str(uuid.uuid4())
     response.headers["X-Process-Time"] = f"{time.perf_counter() - start:.6f}"
-
     return response
 
+@app.get("/")
+def root():
+    return {"status": "ok"}
 
 @app.get("/stats")
 def stats(values: str = Query(...)):
     nums = [int(x.strip()) for x in values.split(",")]
-
     total = sum(nums)
 
     return {
