@@ -164,11 +164,11 @@ def effective_config():
     return {"test": "working"}
 
 import os
-
 @app.get("/debug-env")
 def debug_env():
+    import os
     return {
         "APP_PORT": os.getenv("APP_PORT"),
         "APP_WORKERS": os.getenv("APP_WORKERS"),
-        "APP_API_KEY_EXISTS": os.getenv("APP_API_KEY") is not None,
+        "APP_API_KEY_SET": os.getenv("APP_API_KEY") is not None,
     }
