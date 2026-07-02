@@ -2,3 +2,5 @@ fastapi
 uvicorn[standard]
 PyJWT
 cryptography
+python-dotenv
+PyYAML
