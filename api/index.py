@@ -136,17 +136,18 @@ def effective_config(set: list[str] = Query(default=[])):
         config["workers"] = int(os.environ["NUM_WORKERS"])
 
     # OS env layer
-    mapping = {
-        "APP_PORT": "port",
-        "APP_WORKERS": "workers",
-        "APP_DEBUG": "debug",
-        "APP_LOG_LEVEL": "log_level",
-        "APP_API_KEY": "api_key",
-    }
+    # OS env layer
+    config["port"] = int(os.getenv("APP_PORT") or 8964)
+    config["workers"] = int(os.getenv("APP_WORKERS") or 10)
 
-    for env_key, cfg_key in mapping.items():
-        if env_key in os.environ:
-            config[cfg_key] = coerce(cfg_key, os.environ[env_key])
+    if os.getenv("APP_DEBUG"):
+        config["debug"] = coerce("debug", os.getenv("APP_DEBUG"))
+
+    if os.getenv("APP_LOG_LEVEL"):
+        config["log_level"] = os.getenv("APP_LOG_LEVEL")
+
+    if os.getenv("APP_API_KEY"):
+        config["api_key"] = os.getenv("APP_API_KEY")
 
     # CLI overrides
     for item in set:
